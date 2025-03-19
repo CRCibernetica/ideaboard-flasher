@@ -16,9 +16,7 @@ let progressLine = null;
 
 // Example firmware files (replace with your actual firmware files)
 const availableFirmware = [
-    "firmware/ideaboardfirmware03182025.bin",
-    "firmware/ideaboardfirmware03172025.bin",
-    "firmware/ideaboardfirmware03162025.bin"
+    "firmware/ideaboardfirmware03182025.bin"
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
