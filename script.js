@@ -1,17 +1,25 @@
+// script.js
 import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.5.4/bundle.js";
 
 const BAUD_RATE = 921600;
-const FIRMWARE_URL = "firmware/ideaboardfirmware03182025.bin";
 const FLASH_OFFSET = 0x0;
 
 const log = document.getElementById("log");
 const butConnect = document.getElementById("butConnect");
 const butProgram = document.getElementById("butProgram");
+const firmwareSelect = document.getElementById("firmwareSelect");
 
 let device = null;
 let transport = null;
 let esploader = null;
-let progressLine = null; // To hold the in-place progress element
+let progressLine = null;
+
+// Example firmware files (replace with your actual firmware files)
+const availableFirmware = [
+    "firmware/ideaboardfirmware03182025.bin",
+    "firmware/ideaboardfirmware03172025.bin",
+    "firmware/ideaboardfirmware03162025.bin"
+];
 
 document.addEventListener("DOMContentLoaded", () => {
     butConnect.addEventListener("click", clickConnect);
@@ -21,25 +29,28 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("notSupported").style.display = "none";
     }
 
+    // Populate firmware dropdown
+    availableFirmware.forEach(firmware => {
+        const option = document.createElement("option");
+        option.value = firmware;
+        option.textContent = firmware.split('/').pop(); // Show only filename
+        firmwareSelect.appendChild(option);
+    });
+
     logLine("Ideaboard Flasher loaded.");
 });
 
 function logLine(text) {
-    // Skip "Programming: x%" lines
     if (text.startsWith("Programming: ")) return;
-
-    // Handle "Writing at" lines to update in place
     if (text.startsWith("Writing at")) {
         if (!progressLine) {
             progressLine = document.createElement("div");
             log.appendChild(progressLine);
         }
         progressLine.textContent = text;
-        log.scrollTop = log.scrollHeight; // Keep scrolling to show latest static lines
+        log.scrollTop = log.scrollHeight;
         return;
     }
-
-    // Regular log lines
     const line = document.createElement("div");
     line.textContent = text;
     log.appendChild(line);
@@ -69,7 +80,6 @@ async function clickConnect() {
     try {
         device = await navigator.serial.requestPort({});
         transport = new Transport(device, true);
-
         const loaderOptions = {
             transport: transport,
             baudrate: BAUD_RATE,
@@ -84,7 +94,6 @@ async function clickConnect() {
                 },
             },
         };
-
         esploader = new ESPLoader(loaderOptions);
         await esploader.main("default_reset");
         toggleUI(true);
@@ -96,31 +105,34 @@ async function clickConnect() {
 }
 
 async function clickProgram() {
+    const selectedFirmware = firmwareSelect.value;
+    if (!selectedFirmware) {
+        logError("Please select a firmware file first");
+        return;
+    }
+
     if (!confirm("This will erase and program the flash. Continue?")) return;
 
     butProgram.disabled = true;
-    progressLine = null; // Reset progress line for new programming session
+    progressLine = null;
     try {
-        // Erase flash
         logLine("Erasing flash...");
         const eraseStart = Date.now();
         await esploader.eraseFlash();
         logLine(`Erase completed in ${Date.now() - eraseStart}ms.`);
 
-        // Fetch firmware and convert to binary string
         logLine("Fetching firmware...");
-        const response = await fetch(FIRMWARE_URL);
+        const response = await fetch(selectedFirmware);
         if (!response.ok) throw new Error("Failed to fetch firmware");
         const arrayBuffer = await response.arrayBuffer();
         const firmwareData = arrayBufferToBinaryString(arrayBuffer);
 
-        // Program firmware
         const flashOptions = {
             fileArray: [{ data: firmwareData, address: FLASH_OFFSET }],
             flashSize: "keep",
             eraseAll: false,
             compress: true,
-            reportProgress: () => {}, // Disable progress reporting to avoid "Programming: x%"
+            reportProgress: () => {},
             calculateMD5Hash: (image) => CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)),
         };
 

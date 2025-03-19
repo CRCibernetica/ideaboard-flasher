@@ -30,6 +30,7 @@
         display: flex;
         gap: 10px;
         margin-bottom: 20px;
+        align-items: center;
       }
 
       button {
@@ -50,6 +51,20 @@
       button:disabled {
         background-color: #95a5a6;
         cursor: not-allowed;
+      }
+
+      select {
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        font-size: 16px;
+        background-color: white;
+        cursor: pointer;
+      }
+
+      select:focus {
+        outline: none;
+        border-color: var(--secondary-color);
       }
 
       main {
@@ -95,6 +110,9 @@
       <header>
         <button id="butConnect">Connect</button>
         <button id="butProgram" disabled>Program</button>
+        <select id="firmwareSelect">
+          <option value="">Select Firmware</option>
+        </select>
       </header>
       <div id="notSupported">
         Sorry, Web Serial is not supported. Use Chrome 89 or later.
