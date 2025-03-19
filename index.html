@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Ideaboard Flasher</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
+    <script type="module" src="script.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <button id="butConnect">Connect</button>
+      <button id="butProgram" disabled>Program</button>
+    </header>
+    <main>
+      <div id="notSupported">
+        Sorry, Web Serial is not supported. Use Chrome 89 or later.
+      </div>
+      <div id="log" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; font-family: monospace;"></div>
+    </main>
+  </body>
+</html>
