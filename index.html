@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,17 +7,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
     <script type="module" src="script.js" defer></script>
+    <style>
+      :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #3498db;
+        --success-color: #2ecc71;
+        --error-color: #e74c3c;
+        --background-color: #ecf0f1;
+        --text-color: #333;
+      }
+
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        line-height: 1.6;
+      }
+
+      header {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background-color: var(--secondary-color);
+        color: white;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+
+      button:hover:not(:disabled) {
+        background-color: #2980b9;
+      }
+
+      button:disabled {
+        background-color: #95a5a6;
+        cursor: not-allowed;
+      }
+
+      main {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      #notSupported {
+        background-color: var(--error-color);
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+
+      #log {
+        background-color: white;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        padding: 15px;
+        height: 400px;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+      }
+
+      #log > div {
+        margin: 5px 0;
+        word-wrap: break-word;
+      }
+
+      h1 {
+        color: var(--primary-color);
+        margin: 0 0 20px 0;
+        font-size: 24px;
+      }
+    </style>
   </head>
   <body>
-    <header>
-      <button id="butConnect">Connect</button>
-      <button id="butProgram" disabled>Program</button>
-    </header>
     <main>
+      <h1>Ideaboard Flasher</h1>
+      <header>
+        <button id="butConnect">Connect</button>
+        <button id="butProgram" disabled>Program</button>
+      </header>
       <div id="notSupported">
         Sorry, Web Serial is not supported. Use Chrome 89 or later.
       </div>
-      <div id="log" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; font-family: monospace;"></div>
+      <div id="log"></div>
     </main>
   </body>
 </html>
