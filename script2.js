@@ -1,15 +1,68 @@
 // script.js
-// ... (keep existing imports and constants)
+import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.5.4/bundle.js";
+
+const BAUD_RATE = 921600;
+const FLASH_OFFSET = 0x0;
+
+const log = document.getElementById("log");
+const butConnect = document.getElementById("butConnect");
+const butProgram = document.getElementById("butProgram");
+const firmwareSelect = document.getElementById("firmwareSelect");
 
 let device = null;
 let transport = null;
 let esploader = null;
 let progressLine = null;
-let reader = null;  // Add this to handle continuous reading
+let reader = null;
 
-// ... (keep existing DOM element selections and availableFirmware)
+// Example firmware files (replace with your actual firmware files)
+const availableFirmware = [
+    "firmware/ideaboardfirmware03202025.bin"
+];
 
-// Add this new function to read serial output continuously
+document.addEventListener("DOMContentLoaded", () => {
+    butConnect.addEventListener("click", clickConnect);
+    butProgram.addEventListener("click", clickProgram);
+
+    if ("serial" in navigator) {
+        document.getElementById("notSupported").style.display = "none";
+    }
+
+    // Populate firmware dropdown
+    availableFirmware.forEach(firmware => {
+        const option = document.createElement("option");
+        option.value = firmware;
+        option.textContent = firmware.split('/').pop(); // Show only filename
+        firmwareSelect.appendChild(option);
+    });
+
+    logLine("Ideaboard Flasher loaded.");
+});
+
+function logLine(text) {
+    if (text.startsWith("Programming: ")) return;
+    if (text.startsWith("Writing at")) {
+        if (!progressLine) {
+            progressLine = document.createElement("div");
+            log.appendChild(progressLine);
+        }
+        progressLine.textContent = text;
+        log.scrollTop = log.scrollHeight;
+        return;
+    }
+    const line = document.createElement("div");
+    line.textContent = text;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+}
+
+function logError(text) {
+    const line = document.createElement("div");
+    line.innerHTML = `<span style="color: red;">Error: ${text}</span>`;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+}
+
 async function startSerialReader() {
     if (!transport || !device) return;
     
@@ -30,26 +83,6 @@ async function startSerialReader() {
     }
 }
 
-// Modify the DOMContentLoaded handler
-document.addEventListener("DOMContentLoaded", () => {
-    butConnect.addEventListener("click", clickConnect);
-    butProgram.addEventListener("click", clickProgram);
-
-    if ("serial" in navigator) {
-        document.getElementById("notSupported").style.display = "none";
-    }
-
-    availableFirmware.forEach(firmware => {
-        const option = document.createElement("option");
-        option.value = firmware;
-        option.textContent = firmware.split('/').pop();
-        firmwareSelect.appendChild(option);
-    });
-
-    logLine("Ideaboard Flasher loaded.");
-});
-
-// Modify clickConnect to initialize the reader
 async function clickConnect() {
     if (transport) {
         if (reader) {
@@ -99,7 +132,6 @@ async function clickConnect() {
     }
 }
 
-// Modify clickProgram to keep connection alive
 async function clickProgram() {
     const selectedFirmware = firmwareSelect.value;
     if (!selectedFirmware) {
@@ -138,7 +170,7 @@ async function clickProgram() {
         logLine(`Programming completed in ${Date.now() - programStart}ms.`);
         logLine("Firmware installed successfully. Device will now reset and show output...");
         
-        // Instead of closing, perform a soft reset and keep reading
+        // Perform a soft reset and keep reading
         await esploader.softReset();
         
     } catch (e) {
@@ -148,4 +180,20 @@ async function clickProgram() {
     }
 }
 
-// ... (keep existing toggleUI, sleep, and arrayBufferToBinaryString functions)
+function toggleUI(connected) {
+    butConnect.textContent = connected ? "Disconnect" : "Connect";
+    butProgram.disabled = !connected;
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function arrayBufferToBinaryString(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    let binaryString = "";
+    for (let i = 0; i < bytes.length; i++) {
+        binaryString += String.fromCharCode(bytes[i]);
+    }
+    return binaryString;
+}
