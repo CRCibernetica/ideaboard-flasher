@@ -13,9 +13,7 @@ let device = null;
 let transport = null;
 let esploader = null;
 let progressLine = null;
-let reader = null;
 
-// Example firmware files (replace with your actual firmware files)
 const availableFirmware = [
     "firmware/ideaboardfirmware03202025.bin"
 ];
@@ -28,11 +26,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("notSupported").style.display = "none";
     }
 
-    // Populate firmware dropdown
     availableFirmware.forEach(firmware => {
         const option = document.createElement("option");
         option.value = firmware;
-        option.textContent = firmware.split('/').pop(); // Show only filename
+        option.textContent = firmware.split('/').pop();
         firmwareSelect.appendChild(option);
     });
 
@@ -63,32 +60,8 @@ function logError(text) {
     log.scrollTop = log.scrollHeight;
 }
 
-async function startSerialReader() {
-    if (!transport || !device) return;
-    
-    try {
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) {
-                logLine("Serial reader closed");
-                break;
-            }
-            if (value) {
-                const text = new TextDecoder().decode(value);
-                logLine(text);
-            }
-        }
-    } catch (e) {
-        logError(`Serial read error: ${e.message}`);
-    }
-}
-
 async function clickConnect() {
     if (transport) {
-        if (reader) {
-            await reader.cancel();
-            reader = null;
-        }
         await transport.disconnect();
         await sleep(1500);
         toggleUI(false);
@@ -110,8 +83,10 @@ async function clickConnect() {
                 clean: () => (log.innerHTML = ""),
                 writeLine: (data) => logLine(data),
                 write: (data) => {
+                    // Handle both string and Uint8Array inputs
+                    const text = typeof data === 'string' ? data : new TextDecoder().decode(data);
                     const line = document.createElement("div");
-                    line.textContent = data;
+                    line.textContent = text;
                     log.appendChild(line);
                     log.scrollTop = log.scrollHeight;
                 },
@@ -120,15 +95,34 @@ async function clickConnect() {
         esploader = new ESPLoader(loaderOptions);
         await esploader.main("default_reset");
         
-        // Start reading from serial port
-        reader = device.readable.getReader();
-        startSerialReader();  // Start the continuous reading
+        // Connect and start reading serial output
+        await esploader.connect();
         
         toggleUI(true);
         logLine(`Connected at ${BAUD_RATE} baud.`);
+        
+        // Start continuous reading
+        readSerialOutput();
     } catch (e) {
         logError(e.message);
         toggleUI(false);
+    }
+}
+
+async function readSerialOutput() {
+    while (transport && device) {
+        try {
+            const data = await transport.read();
+            if (data && data.length > 0) {
+                esploader.terminal.write(data);
+            }
+            await sleep(100); // Small delay to prevent overwhelming the UI
+        } catch (e) {
+            if (transport) { // Only log error if we're still supposed to be connected
+                logError(`Read error: ${e.message}`);
+            }
+            break;
+        }
     }
 }
 
@@ -170,8 +164,11 @@ async function clickProgram() {
         logLine(`Programming completed in ${Date.now() - programStart}ms.`);
         logLine("Firmware installed successfully. Device will now reset and show output...");
         
-        // Perform a soft reset and keep reading
+        // Perform a soft reset and continue reading
         await esploader.softReset();
+        
+        // Restart serial reading after reset
+        readSerialOutput();
         
     } catch (e) {
         logError(e.message);
